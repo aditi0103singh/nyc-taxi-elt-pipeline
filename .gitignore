@@ -1,9 +1,12 @@
 # Virtual Environment
 .venv/
 
-# Python cache
+# Python Cache
 __pycache__/
-*.pyc
+*.py[cod]
+
+# Environment Variables
+.env
 
 # VS Code
 .vscode/
@@ -12,6 +15,9 @@ __pycache__/
 logs/
 *.log
 
-# Environment variables
-.env
+# DuckDB Database
+warehouse/*.duckdb
 
+# Operating System Files
+.DS_Store
+Thumbs.db
