@@ -1,6 +1,6 @@
 # 🚖 Modern Local-First ELT Pipeline (NYC Taxi)
 
-An enterprise-grade, cost-effective Extract, Load, Transform (ELT) data pipeline built locally using **Python**, **DuckDB**, and **Parquet**, replicating modern cloud analytical architectures (such as cloud object storage $\rightarrow$ cloud data warehousing) with zero infrastructure overhead.
+An enterprise-grade, cost-effective Extract, Load, Transform (ELT) data pipeline built locally using **Python**, **DuckDB**, **dbt (data build tool)**, and **Parquet**, replicating modern cloud analytical architectures (such as cloud object storage $\rightarrow$ cloud data warehousing) with zero infrastructure overhead.
 
 ---
 
@@ -16,8 +16,9 @@ This project is built iteratively following industry-grade data engineering patt
   * Replaces heavy cloud data warehouses with **DuckDB**, a high-performance, in-process columnar analytical engine (OLAP).
   * Programmatically automates ingestion via Python scripts, creating logical namespaces (`raw_staging`) and bulk-loading over 3 million rows of compressed Parquet data.
 
-* **[Phase 3: Transformations & Dimensional Modeling (Upcoming)]**
-  * Star Schema implementation, fact/dimension building, and automated data quality assertions.
+* **[Phase 3: Transformations & Dimensional Modeling (`dbt`)](dbt_project.yml)**
+  * Integrates **dbt (data build tool)** to manage the transformation layer inside DuckDB.
+  * Implements modular staging models (`stg_yellow_tripdata`) with data type casting, renaming conventions, and automated source testing (`schema.yml`).
 
 ---
 
@@ -32,6 +33,11 @@ nyc-taxi-elt-pipeline/
 ├── warehouse/
 │   └── warehouse.duckdb      # Local analytical database file (Generated)
 │
+├── models/                   # dbt transformation models
+│   └── staging/              
+│       ├── schema.yml        # dbt sources and data quality tests
+│       └── stg_yellow_tripdata.sql # Cleaned and casted staging view
+│
 ├── scripts/
 │   └── create_warehouse.py   # Automated warehouse setup & ingestion script
 │
@@ -42,18 +48,22 @@ nyc-taxi-elt-pipeline/
 │   ├── data_lake_landing_zone_notes.md   # Landing zone architecture notes
 │   └── data_warehouse_ingestion_notes.md # Data warehouse ingestion notes
 │
+├── dbt_project.yml           # dbt project configuration
 ├── README.md                 # Project homepage & documentation index
 ├── requirements.txt          # Python dependencies
-└── .gitignore                # Excludes virtual environments & binaries
-🚀 Quick Start / How to Run
+└── .gitignore                # Excludes virtual 
+environments & binaries
 
+Quick Start / How to Run
 1. Clone the Repository
+
 git clone [https://github.com/aditi0103singh/nyc-taxi-elt-pipeline.git](https://github.com/aditi0103singh/nyc-taxi-elt-pipeline.git)
 
 cd nyc-taxi-elt-pipeline
 
 2. Set Up the Environment
 Create and activate your virtual environment, then install dependencies:
+
 python -m venv .venv
 
 # On Windows PowerShell:
@@ -66,7 +76,19 @@ pip install -r requirements.txt
 
 3. Run Ingestion
 Execute the pipeline script to automatically initialize the local DuckDB warehouse and ingest the raw Parquet dataset into the staging layer:
+
 python scripts/create_warehouse.py
 
-4. Verify Data Integrity
+4. Configure & Run dbt Transformations
+Configure your local dbt profile pointing to your warehouse.duckdb file inside your user profile directory (~/.dbt/profiles.yml).
+
+Test your dbt connection:
+
+dbt debug
+
+Execute your dbt transformation models:
+
+dbt run
+
+5. Verify Data Integrity
 Run the verification queries stored in sql/verification_queries.sql via your Python terminal or DuckDB extension to validate row counts, schemas, and performance metrics.
