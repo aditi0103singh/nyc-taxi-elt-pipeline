@@ -1,0 +1,26 @@
+version: 2
+
+sources:
+  - name: raw_staging
+    description: Raw staging schema containing ingested NYC taxi data.
+    tables:
+      - name: raw_trips
+        description: Raw trip records.
+        columns:
+          - name: VendorID
+            tests:
+              - not_null
+
+models:
+  - name: stg_taxi_trips
+    description: Cleaned and standardized staging model for NYC taxi trips.
+    columns:
+      - name: vendor_id
+        tests:
+          - not_null
+      - name: pickup_datetime
+        tests:
+          - not_null
+      - name: dropoff_datetime
+        tests:
+          - not_null
