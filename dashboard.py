@@ -1,58 +1,48 @@
 import streamlit as st
 import duckdb
+import pandas as pd
 
-# 1. Page Configuration
+# Page Configuration
 st.set_page_config(
-    page_title="NYC Taxi Executive Dashboard",
+    page_title="NYC Taxi Analytics Dashboard",
     page_icon="🚖",
     layout="wide"
 )
 
-# 2. Sidebar Guide
-with st.sidebar:
-    st.header("🚖 NYC Taxi Analytics")
-    st.markdown("Viewing production-ready data transformed via **dbt** and stored in **DuckDB**.")
-    st.markdown("---")
-    st.markdown("**Pipeline Workflow:**\n1. Run pipeline in terminal (`dbt run`)\n2. View live metrics here.")
+st.title("🚖 NYC Taxi Executive Analytics Dashboard")
+st.markdown("Real-time operational and financial insights powered by DuckDB, dbt, and Streamlit.")
 
-# 3. Read-Only Database Connection
+# Connect to DuckDB Warehouse (Read-Only Mode)
 @st.cache_resource
 def get_db_connection():
+    # Points to your local DuckDB database file
     return duckdb.connect("warehouse/warehouse.duckdb", read_only=True)
 
-con = get_db_connection()
-
-# 4. Main Title
-data_load_state = st.text("Loading data from DuckDB...")
 try:
-    df_revenue = con.sql("SELECT * FROM main.mart_daily_revenue ORDER BY trip_date DESC").df()
-    df_trips_sample = con.sql("SELECT * FROM main.fct_taxi_trips LIMIT 100").df()
-    data_load_state.empty() # Clear loading text
+    conn = get_db_connection()
+
+    # Fetch high-level KPIs from your dbt Marts
+    st.subheader("📊 High-Level Performance Metrics")
+    
+    # Example query pulling from your pre-aggregated marts or fact tables
+    # (Adjust table name based on your exact dbt model name, e.g., mart_daily_revenue)
+    query_kpis = "SELECT count(*) as total_trips, sum(fare_amount) as total_revenue FROM fct_taxi_trips"
+    df_kpis = conn.execute(query_kpis).df()
+
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric(label="Total Trips Recorded", value=f"{df_kpis['total_trips'].iloc[0]:,}")
+    with col2:
+        st.metric(label="Total Revenue", value=f"${df_kpis['total_revenue'].iloc[0]:,.2f}")
+
+    st.divider()
+
+    # Detailed data view
+    st.subheader("📋 Recent Trip Records")
+    query_recent = "SELECT * FROM fct_taxi_trips LIMIT 50"
+    df_recent = conn.execute(query_recent).df()
+    st.dataframe(df_recent, use_container_width=True)
+
 except Exception as e:
-    st.error("⚠️ Database tables not found! Please run `dbt run` in your `nyc_taxi_dbt/` folder first.")
-    st.stop()
-
-st.title("🚖 NYC Taxi Executive Analytics Dashboard")
-
-# 5. KPIs
-total_trips = df_revenue["total_trips"].sum()
-total_revenue = df_revenue["total_overall_revenue"].sum()
-avg_tip_pct = df_revenue["average_tip_percentage"].mean()
-
-col1, col2, col3 = st.columns(3)
-col1.metric("Total Trips", f"{total_trips:,}")
-col2.metric("Total Revenue", f"${total_revenue:,.2f}")
-col3.metric("Avg Tip %", f"{avg_tip_pct:.2f}%")
-
-st.divider()
-
-# 6. Chart
-st.subheader("📈 Daily Revenue Trend")
-st.line_chart(df_revenue.set_index("trip_date")[["total_overall_revenue"]])
-
-# 7. Tables
-tab1, tab2 = st.tabs(["📋 Daily Revenue Mart", "🔍 Fact Table Sample"])
-with tab1:
-    st.dataframe(df_revenue, use_container_width=True)
-with tab2:
-    st.dataframe(df_trips_sample, use_container_width=True)
+    st.warning("⚠️ Database warehouse file not found or not yet generated. Run your dbt models to build the warehouse first!")
+    st.info(f"Details: {e}")
